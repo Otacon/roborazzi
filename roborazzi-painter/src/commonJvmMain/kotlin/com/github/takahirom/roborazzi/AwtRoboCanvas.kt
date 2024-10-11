@@ -23,6 +23,7 @@ import java.io.File
 import javax.imageio.IIOImage
 import javax.imageio.ImageIO
 import javax.imageio.ImageTypeSpecifier
+import javax.imageio.ImageWriteParam
 import javax.imageio.ImageWriter
 import javax.imageio.metadata.IIOMetadata
 import javax.imageio.metadata.IIOMetadataFormatImpl
@@ -241,8 +242,11 @@ class AwtRoboCanvas(width: Int, height: Int, filled: Boolean, bufferedImageType:
     }
     val writer = getWriter(croppedImage, "png")
     val meta = writer.writeMetadata(contextData)
+    val params = writer.defaultWriteParam
+    params.compressionMode = ImageWriteParam.MODE_EXPLICIT
+    params.compressionQuality = 1.0F
     writer.output = ImageIO.createImageOutputStream(file)
-    writer.write(IIOImage(scaledBufferedImage, null, meta))
+    writer.write(meta, IIOImage(scaledBufferedImage, null, null), params)
   }
 
   private fun ImageWriter.writeMetadata(
@@ -589,7 +593,17 @@ private fun BufferedImage.scale(scale: Double): BufferedImage {
 }
 
 private fun <T> BufferedImage.graphics(block: (Graphics2D) -> T): T {
-  val graphics = createGraphics()
+  val graphics = createGraphics().apply {
+    setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY)
+    setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF)
+    setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF)
+    setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY)
+    setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE)
+    setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF)
+    setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR)
+    setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+    setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
+  }
   graphics.font = Font("Courier New", Font.BOLD, 12)
   val result = block(graphics)
   graphics.dispose()
